@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Склад СПРУТ — заказы Ozon",
+  "version": "1.0.0",
+  "description": "Отправляет заказы из «Мои заказы» на Ozon во «Входящие заказы» склада СПРУТ.",
+  "icons": { "48": "icon.png", "128": "icon.png" },
+  "action": { "default_title": "Склад СПРУТ — настройки", "default_icon": "icon.png" },
+  "options_page": "options.html",
+  "background": { "service_worker": "background.js" },
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://www.ozon.ru/*",
+    "http://piserv.lan/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "content_scripts": [
+    { "matches": ["https://www.ozon.ru/my/*"], "js": ["ozon.js"], "run_at": "document_idle" }
+  ]
+}

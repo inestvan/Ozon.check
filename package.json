@@ -1,0 +1,12 @@
+{
+  "name": "ozon-check",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Расширение для браузера: заказы Ozon → «Входящие заказы» склада СПРУТ",
+  "scripts": {
+    "test": "node test/e2e.js"
+  },
+  "devDependencies": {
+    "puppeteer-core": "24.43.1"
+  }
+}

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Склад СПРУТ — настройки расширения</title>
+<style>
+  body { font: 15px/1.45 system-ui, 'Segoe UI', sans-serif; color: #1A1F1B; background: #EDEFEA; margin: 0; padding: 32px 16px; }
+  main { max-width: 520px; margin: 0 auto; background: #fff; border: 1px solid #CDD3CA; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  h1 { margin: 0; font-size: 20px; }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #5F6A61; }
+  input { font: 14px ui-monospace, Consolas, monospace; min-height: 40px; padding: 0 12px; border: 1px solid #CDD3CA; border-radius: 10px; }
+  button { min-height: 44px; border: 0; border-radius: 10px; background: #4E6526; color: #fff; font: 600 15px system-ui, sans-serif; cursor: pointer; }
+  .msg { border-radius: 10px; padding: 10px 12px; display: none; }
+  .ok { background: #DDEFDF; color: #1F5A2B; display: block; }
+  .err { background: #FDF3F2; color: #8C1D17; border: 1px solid #E8B4AF; display: block; }
+  .muted { color: #5F6A61; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Склад СПРУТ — заказы Ozon</h1>
+  <div class="muted">Адрес и ключ — на складе: «Настройки» → «Расширение для браузера».</div>
+  <label>Адрес склада<input id="server" placeholder="http://piserv.lan:8000"></label>
+  <label>Ключ<input id="key" placeholder="вставьте ключ"></label>
+  <button id="save">Сохранить и проверить</button>
+  <div id="msg" class="msg"></div>
+  <div class="muted">Дальше: на Ozon откройте «Заказы» и нажмите «📦 В склад СПРУТ» внизу слева.</div>
+</main>
+<script src="options.js"></script>
+</body>
+</html>
