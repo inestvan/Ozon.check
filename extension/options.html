@@ -2,32 +2,44 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<title>Склад СПРУТ — настройки расширения</title>
+<title>Склад СПРУТ — заказы Ozon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@600&family=JetBrains+Mono:wght@500&display=swap">
 <style>
-  body { font: 15px/1.45 system-ui, 'Segoe UI', sans-serif; color: #1A1F1B; background: #EDEFEA; margin: 0; padding: 32px 16px; }
-  main { max-width: 520px; margin: 0 auto; background: #fff; border: 1px solid #CDD3CA; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
-  h1 { margin: 0; font-size: 20px; }
-  label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #5F6A61; }
-  input { font: 14px ui-monospace, Consolas, monospace; min-height: 40px; padding: 0 12px; border: 1px solid #CDD3CA; border-radius: 10px; }
-  button { min-height: 44px; border: 0; border-radius: 10px; background: #4E6526; color: #fff; font: 600 15px system-ui, sans-serif; cursor: pointer; }
-  .msg { border-radius: 10px; padding: 10px 12px; display: none; }
-  .ok { background: #DDEFDF; color: #1F5A2B; display: block; }
-  .err { background: #FDF3F2; color: #8C1D17; border: 1px solid #E8B4AF; display: block; }
-  .muted { color: #5F6A61; font-size: 13px; }
-  label.chk { flex-direction: row; align-items: center; gap: 10px; font-size: 14px; color: #1A1F1B; cursor: pointer; }
-  label.chk input { width: 18px; height: 18px; min-height: 0; accent-color: #4E6526; margin: 0; }
+  /* как у склада: стиль «Мастерская» */
+  :root { --bg: #EDEFEA; --card: #FFFFFF; --ink: #1A1F1B; --muted: #5F6A61; --line: #CDD3CA; --olive: #4E6526; --olive-dk: #33441A; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 Onest, 'Segoe UI', system-ui, sans-serif; }
+  main { max-width: 440px; margin: 8vh auto; padding: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+  .brand b { font-family: Unbounded, Onest, sans-serif; font-weight: 600; font-size: 20px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+  input { font: 500 14px 'JetBrains Mono', ui-monospace, Consolas, monospace; color: var(--ink); min-height: 40px; padding: 0 12px;
+    border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+  input:focus { outline: 2px solid var(--olive); outline-offset: 0; }
+  label.chk { flex-direction: row; align-items: center; gap: 10px; font-size: 14px; color: var(--ink); min-height: 32px; cursor: pointer; }
+  label.chk input { width: 18px; height: 18px; min-height: 0; accent-color: var(--olive); margin: 0; }
+  button { min-height: 52px; border: 1px solid var(--olive); border-radius: 12px; background: var(--olive); color: #fff;
+    font: 600 16px Onest, 'Segoe UI', sans-serif; cursor: pointer; }
+  button:hover { background: var(--olive-dk); }
+  .msg { border-radius: 12px; padding: 12px 16px; font-weight: 600; display: none; }
+  .msg.ok { display: block; background: #DDEFDF; color: #1F5A2B; }
+  .msg.err { display: block; background: #FDF3F2; color: #8C1D17; border: 1px solid #E8B4AF; }
 </style>
 </head>
 <body>
 <main>
-  <h1>Склад СПРУТ — заказы Ozon</h1>
-  <div class="muted">Адрес и ключ — на складе: «Настройки» → «Расширение для браузера».</div>
-  <label>Адрес склада<input id="server" placeholder="http://piserv.lan:8000"></label>
-  <label>Ключ<input id="key" placeholder="вставьте ключ"></label>
-  <label class="chk"><input type="checkbox" id="onlyWay"> Только заказы в пути — полученные и отменённые не отправлять</label>
-  <button id="save">Сохранить и проверить</button>
-  <div id="msg" class="msg"></div>
-  <div class="muted">Дальше: на Ozon откройте «Заказы» и нажмите «📦 В склад СПРУТ» внизу слева.</div>
+  <div class="card">
+    <div class="brand"><b>Склад СПРУТ</b><div class="muted">Заказы Ozon → «Входящие заказы»</div></div>
+    <div id="msg" class="msg" role="status"></div>
+    <label>Адрес склада<input id="server" placeholder="http://piserv.lan:8000"></label>
+    <label>Ключ<input id="key" placeholder="вставьте ключ"></label>
+    <div class="muted">Адрес и ключ — на складе: «Настройки» → «Расширение для браузера».</div>
+    <label class="chk"><input type="checkbox" id="onlyWay"> Только заказы в пути — полученные и отменённые не отправлять</label>
+    <button id="save">Сохранить и проверить</button>
+    <div class="muted">Дальше: на Ozon откройте «Заказы» и нажмите «📦 В склад СПРУТ» внизу слева.</div>
+  </div>
 </main>
 <script src="options.js"></script>
 </body>

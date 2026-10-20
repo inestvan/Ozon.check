@@ -11,12 +11,15 @@ const puppeteer = require('puppeteer-core');
 const EXT = path.resolve(__dirname, '..', 'extension');
 const CHROME = process.env.CHROME || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const KEY = 'test-key-123';
+const SHOTS = process.env.SHOTS;   // папка для снимков экрана (посмотреть, как выглядит)
+const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, name + '.png') }); };
 
 // ---------- выдуманный Ozon: тот же JSON, что отдаёт /api/entrypoint-api.bx/page/json/v2 ----------
 const W = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, JSON.stringify(v)]));
 const product = (id, name, price, attrs = []) => ({
   title: { name: { text: name }, common: { action: { link: `/product/x-${id}/?is_apparel_size_selected=true`, id } } },
   attributes: attrs.map((t) => ({ text: t })), price: { price: [{ text: price }] },
+  picture: { image: { image: `https://ir.ozone.ru/s3/multimedia-1/${id}.jpg` } },
 });
 const ship = (status, products) => ({ header: [{ type: 'textIcon', textIcon: { text: { text: status } } }],
   items: [{ sellers: [{ products }] }] });
@@ -103,6 +106,7 @@ const step = (name) => console.log('✓', name);
     assert.match((await save(KEY, 'http://127.0.0.1:1'))[1], /не отвечает/);
     const ok = await save(KEY);
     assert.equal(ok[0], 'msg ok', ok[1]);
+    await shot(opt, 'options');
     step('настройки: неверный ключ, недоступный склад, верный ключ');
 
     // Ozon: кнопка и отправка
@@ -138,6 +142,7 @@ const step = (name) => console.log('✓', name);
     // по умолчанию — только в пути: полученный 555-0004 и завершённые не уходят
     assert.equal(await opt.$eval('#onlyWay', (e) => e.checked), true);
     assert.match(await press(), /Готово \(в пути: 2\): новых 2/);
+    await shot(oz, 'ozon-note');
     assert.deepEqual(got[0].orders.map((o) => o.number), ['555-0001', '555-0005']);
     assert.equal(got[0].orders[1].status, 'Ожидает получения');
     step('«только в пути» (по умолчанию): полученные не отправлены, «Ожидает получения» — отправлен');
@@ -158,7 +163,8 @@ const step = (name) => console.log('✓', name);
     assert.equal(o1.amount, 1240);
     assert.equal(o1.status, 'В пути · Отменён');
     assert.deepEqual(o1.items, [{ sku: '123456', name: 'Плата Arduino Nano V3.0 ATmega328P', variant: 'Синий',
-      url: 'https://www.ozon.ru/product/x-123456/', price: 840, qty: 1 }]);   // отменённое отправление не попало
+      url: 'https://www.ozon.ru/product/x-123456/', price: 840, qty: 1,
+      image: 'https://ir.ozone.ru/s3/multimedia-1/123456.jpg' }]);   // отменённое отправление не попало
     assert.equal(o2.status, 'Получен');
     assert.deepEqual(o2.items.map((i) => [i.sku, i.price]), [['222', 250], ['333', 150]]);
     assert.equal(o3.items.length, 0);

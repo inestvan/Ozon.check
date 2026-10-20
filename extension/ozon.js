@@ -69,6 +69,7 @@
           url: link ? 'https://www.ozon.ru' + link.split('?')[0] : '',
           price: money((p.price?.price || []).map((x) => x.text).join(' ')),
           qty,
+          image: p.picture?.image?.image || p.pictureV2?.productMedia?.image?.url || '',
         });
       }
     }
@@ -78,25 +79,34 @@
     };
   }
 
+  // Вид — как у склада (стиль «Мастерская»): оливковая кнопка, белая карточка, зелёное/красное сообщение
+  const FONT = "Onest, 'Segoe UI', system-ui, sans-serif";
+  const LOOK = {
+    info: 'background:#FFFFFF;color:#1A1F1B;border:1px solid #CDD3CA',
+    ok: 'background:#DDEFDF;color:#1F5A2B;border:1px solid #B9D3B4',
+    err: 'background:#FDF3F2;color:#8C1D17;border:1px solid #E8B4AF',
+  };
   const btn = document.createElement('button');
   btn.id = 'sprut-send';
   btn.textContent = '📦 В склад СПРУТ';
-  btn.title = 'Отправить последние заказы во «Входящие заказы» склада';
-  btn.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:2147483647;padding:12px 18px;border:0;border-radius:12px;'
-    + 'background:#4E6526;color:#fff;font:600 15px system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.25);cursor:pointer';
+  btn.title = 'Отправить заказы во «Входящие заказы» склада';
+  btn.style.cssText = `position:fixed;left:16px;bottom:16px;z-index:2147483647;min-height:42px;padding:0 16px;border:1px solid #4E6526;`
+    + `border-radius:10px;background:#4E6526;color:#fff;font:600 14px ${FONT};box-shadow:0 6px 20px rgba(26,31,27,.25);cursor:pointer`;
+  btn.addEventListener('mouseenter', () => { btn.style.background = '#33441A'; });
+  btn.addEventListener('mouseleave', () => { btn.style.background = '#4E6526'; });
   const note = document.createElement('div');
-  note.style.cssText = 'position:fixed;left:16px;bottom:72px;z-index:2147483647;max-width:360px;padding:10px 14px;border-radius:12px;'
-    + 'background:#fff;color:#1A1F1B;font:14px/1.4 system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.2);display:none';
   document.body.append(btn, note);
 
-  const say = (text, link) => {
+  const say = (text, link, kind = 'info') => {
+    note.style.cssText = `position:fixed;left:16px;bottom:68px;z-index:2147483647;max-width:360px;padding:12px 16px;border-radius:12px;`
+      + `font:600 14px/1.45 ${FONT};box-shadow:0 6px 24px rgba(26,31,27,.18);${LOOK[kind]}`;
     note.textContent = text;
     if (link) {
       const a = document.createElement('a');
-      a.href = link; a.target = '_blank'; a.textContent = ' Открыть ↗'; a.style.color = '#4E6526';
+      a.href = link; a.target = '_blank'; a.textContent = ' Открыть ↗';
+      a.style.cssText = 'color:#4E6526;text-decoration:underline;text-underline-offset:2px';
       note.append(a);
     }
-    note.style.display = 'block';
   };
 
   btn.addEventListener('click', async () => {
@@ -113,16 +123,16 @@
       }
       if (onlyWay) orders = orders.filter((o) => o.items.length);
       if (!orders.length) {
-        say(onlyWay ? 'Заказов в пути нет — отправлять нечего.' : 'Заказов нет.');
+        say(onlyWay ? 'Заказов в пути нет — отправлять нечего.' : 'Заказов нет.', null, 'ok');
         return;
       }
       say('Отправляю на склад…');
       const res = await chrome.runtime.sendMessage({ type: 'orders', shop: 'Ozon', orders });
-      if (res.error) say(res.error);
+      if (res.error) say(res.error, null, 'err');
       else say(`Готово${onlyWay ? ` (в пути: ${orders.length})` : ''}: новых ${res.new}, обновлено ${res.updated}. Ждут разбора: ${res.inbox}.`,
-        res.server + '/buy/inbox');
+        res.server + '/buy/inbox', 'ok');
     } catch (e) {
-      say('Не получилось: ' + e.message + '. Обновите страницу и попробуйте ещё раз; не помогло — Ozon поменял сайт.');
+      say('Не получилось: ' + e.message + '. Обновите страницу и попробуйте ещё раз; не помогло — Ozon поменял сайт.', null, 'err');
     } finally {
       btn.disabled = false;
     }
