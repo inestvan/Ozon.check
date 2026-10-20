@@ -14,6 +14,8 @@
   .ok { background: #DDEFDF; color: #1F5A2B; display: block; }
   .err { background: #FDF3F2; color: #8C1D17; border: 1px solid #E8B4AF; display: block; }
   .muted { color: #5F6A61; font-size: 13px; }
+  label.chk { flex-direction: row; align-items: center; gap: 10px; font-size: 14px; color: #1A1F1B; cursor: pointer; }
+  label.chk input { width: 18px; height: 18px; min-height: 0; accent-color: #4E6526; margin: 0; }
 </style>
 </head>
 <body>
@@ -22,6 +24,7 @@
   <div class="muted">Адрес и ключ — на складе: «Настройки» → «Расширение для браузера».</div>
   <label>Адрес склада<input id="server" placeholder="http://piserv.lan:8000"></label>
   <label>Ключ<input id="key" placeholder="вставьте ключ"></label>
+  <label class="chk"><input type="checkbox" id="onlyWay"> Только заказы в пути — полученные и отменённые не отправлять</label>
   <button id="save">Сохранить и проверить</button>
   <div id="msg" class="msg"></div>
   <div class="muted">Дальше: на Ozon откройте «Заказы» и нажмите «📦 В склад СПРУТ» внизу слева.</div>

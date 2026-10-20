@@ -21,7 +21,10 @@ const product = (id, name, price, attrs = []) => ({
 const ship = (status, products) => ({ header: [{ type: 'textIcon', textIcon: { text: { text: status } } }],
   items: [{ sellers: [{ products }] }] });
 const OZON = {
-  '/my/orderlist?selectedTab=active': W({ 'orderList-1-default-1': { ordersV2: [{ common: { action: { link: '/my/orderdetails/?order=555-0001' } } }] } }),
+  '/my/orderlist?selectedTab=active': W({ 'orderList-1-default-1': { ordersV2: [
+    { common: { action: { link: '/my/orderdetails/?order=555-0001' } } },
+    { common: { action: { link: '/my/orderdetails/?order=555-0004' } } },
+    { common: { action: { link: '/my/orderdetails/?order=555-0005' } } }] } }),
   '/my/orderlist?selectedTab=archive': W({ 'orderList-1-default-1': { ordersV2: [
     { common: { action: { link: '/my/orderdetails/?order=555-0002' } } },
     { common: { action: { link: '/my/orderdetails/?order=555-0003' } } }] } }),
@@ -36,6 +39,14 @@ const OZON = {
     'orderDoneTotal-1-default-1': { total: { right: { price: { text: '400 ₽' } } } },
     'shipmentWidget-1-default-1': ship('Получен', [product('222', 'Винт M3x10 потайной DIN 965, 100 шт', '250 ₽'),
       product('333', 'Чехол для телефона', '150 ₽')]),
+  }),
+  '/my/orderdetails/?order=555-0004': W({   // среди «актуальных», но уже получен
+    'titleWithTimer-1-default-1': { title: { text: 'Заказ от 15 октября' } },
+    'shipmentWidget-1-default-1': ship('Получен', [product('555', 'Жидкое мыло', '686 ₽')]),
+  }),
+  '/my/orderdetails/?order=555-0005': W({   // «получения» — не «получен»
+    'titleWithTimer-1-default-1': { title: { text: 'Заказ от 16 октября' } },
+    'shipmentWidget-1-default-1': ship('Ожидает получения', [product('666', 'Разъём GX16-4', '120 ₽')]),
   }),
   '/my/orderdetails/?order=555-0003': W({
     'titleWithTimer-1-default-1': { title: { text: 'Заказ от 1 сентября' } },
@@ -55,7 +66,7 @@ const sklad = http.createServer((req, res) => {
     if (req.url === '/api/shop-orders') {
       const data = JSON.parse(body);
       got.push(data);
-      return send(200, { ok: true, new: got.length === 1 ? data.orders.length : 0, updated: got.length === 1 ? 0 : data.orders.length, inbox: 2 });
+      return send(200, { ok: true, new: data.orders.length, updated: 0, inbox: data.orders.length });
     }
     send(404, { error: 'нет такого' });
   });
@@ -111,17 +122,37 @@ const step = (name) => console.log('✓', name);
     await oz.goto('https://www.ozon.ru/my/orderlist');
     await oz.waitForSelector('#sprut-send', { timeout: 10000 });
     const note = () => oz.evaluate(() => document.getElementById('sprut-send').nextSibling.textContent);
-    await oz.click('#sprut-send');
-    await oz.waitForFunction(() => /Готово|Не получилось/.test(document.getElementById('sprut-send').nextSibling?.textContent || ''), { timeout: 20000 });
-    assert.match(await note(), /Готово: новых 3, обновлено 0/);
-    step('кнопка на Ozon отправила заказы');
+    // галочка «только в пути» в настройках расширения (сохраняется сразу при изменении)
+    const toggle = async () => {
+      await opt.$eval('#onlyWay', (e) => { e.checked = !e.checked; e.dispatchEvent(new Event('change')); });
+      await new Promise((r) => setTimeout(r, 300));
+    };
+    const press = async () => {
+      await oz.bringToFront();
+      await oz.evaluate(() => { document.getElementById('sprut-send').nextSibling.textContent = ''; });
+      await oz.click('#sprut-send');
+      await oz.waitForFunction(() => /Готово|Не получилось|нечего/.test(document.getElementById('sprut-send').nextSibling?.textContent || ''), { timeout: 20000 });
+      return note();
+    };
+
+    // по умолчанию — только в пути: полученный 555-0004 и завершённые не уходят
+    assert.equal(await opt.$eval('#onlyWay', (e) => e.checked), true);
+    assert.match(await press(), /Готово \(в пути: 2\): новых 2/);
+    assert.deepEqual(got[0].orders.map((o) => o.number), ['555-0001', '555-0005']);
+    assert.equal(got[0].orders[1].status, 'Ожидает получения');
+    step('«только в пути» (по умолчанию): полученные не отправлены, «Ожидает получения» — отправлен');
+
+    // галочку сняли — все заказы, и завершённые тоже
+    await toggle();
+    assert.match(await press(), /Готово: новых 5/);
+    step('без галочки: все заказы');
 
     // что получил склад
-    assert.equal(got.length, 1);
-    const { shop, orders } = got[0];
+    assert.equal(got.length, 2);
+    const { shop, orders } = got[1];
     assert.equal(shop, 'Ozon');
-    assert.deepEqual(orders.map((o) => o.number), ['555-0001', '555-0002', '555-0003']);
-    const [o1, o2, o3] = orders;
+    assert.deepEqual(orders.map((o) => o.number), ['555-0001', '555-0004', '555-0005', '555-0002', '555-0003']);
+    const [o1, , , o2, o3] = orders;
     const year = new Date().getFullYear();
     assert.equal(o1.date, `${new Date().getMonth() + 1 < 10 ? year - 1 : year}-10-18`);
     assert.equal(o1.amount, 1240);
@@ -133,10 +164,12 @@ const step = (name) => console.log('✓', name);
     assert.equal(o3.items.length, 0);
     step('склад получил: номера, даты, суммы, статусы, товары (без отменённых)');
 
-    await oz.click('#sprut-send');
-    await oz.waitForFunction(() => /обновлено 3/.test(document.getElementById('sprut-send').nextSibling?.textContent || ''), { timeout: 20000 });
+    // в пути ничего — на склад не ходим
+    await toggle();
+    for (const n of ['555-0001', '555-0005']) OZON[`/my/orderdetails/?order=${n}`] = OZON['/my/orderdetails/?order=555-0004'];
+    assert.match(await press(), /Заказов в пути нет/);
     assert.equal(got.length, 2);
-    step('повторная отправка');
+    step('в пути ничего — «отправлять нечего», склад не трогается');
     console.log('\nВсё работает.');
   } catch (e) {
     console.error('\n✗', e.message);

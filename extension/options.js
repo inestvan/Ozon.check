@@ -1,10 +1,14 @@
 const $ = (id) => document.getElementById(id);
 const show = (text, ok) => { $('msg').textContent = text; $('msg').className = 'msg ' + (ok ? 'ok' : 'err'); };
 
-chrome.storage.sync.get({ server: 'http://piserv.lan:8000', key: '' }).then((s) => {
+chrome.storage.sync.get({ server: 'http://piserv.lan:8000', key: '', onlyWay: true }).then((s) => {
   $('server').value = s.server;
   $('key').value = s.key;
+  $('onlyWay').checked = s.onlyWay;
 });
+
+// галочка сохраняется сразу, без «Сохранить»
+$('onlyWay').addEventListener('change', () => chrome.storage.sync.set({ onlyWay: $('onlyWay').checked }));
 
 $('save').addEventListener('click', async () => {
   let server = $('server').value.trim().replace(/\/+$/, '');

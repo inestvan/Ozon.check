@@ -35,16 +35,19 @@
     return `${year}-${String(month).padStart(2, '0')}-${String(m[1]).padStart(2, '0')}`;
   }
 
-  async function orderNumbers() {
+  // «Получен», «Доставлен» — но не «Ожидает получения»
+  const DONE = /^\s*(получен|доставлен|вручен|выдан)(?![а-яё])/i;
+
+  async function orderNumbers(tabs) {
     const nums = [];
-    for (const tab of ['active', 'archive']) {
+    for (const tab of tabs) {
       const states = await page('/my/orderlist?selectedTab=' + tab);
       for (const n of JSON.stringify(states).match(/order=\d+-\d+/g) || []) nums.push(n.slice(6));
     }
     return [...new Set(nums)];
   }
 
-  async function order(number) {
+  async function order(number, onlyWay) {
     const states = await page('/my/orderdetails/?order=' + number);
     const title = widgets(states, 'titleWithTimer')[0]?.title?.text || '';
     const total = widgets(states, 'orderDoneTotal')[0]?.total?.right?.price?.text;
@@ -54,6 +57,7 @@
       const head = (s.header || []).find((h) => h.type === 'textIcon')?.textIcon?.text?.text;
       if (head) status.push(head);
       if (/отмен/i.test(head || '')) continue;   // отменённая часть заказа — не приедет
+      if (onlyWay && DONE.test(head || '')) continue;   // уже получено — не нужно
       for (const it of s.items || []) for (const seller of it.sellers || []) for (const p of seller.products || []) {
         const link = p.title?.common?.action?.link || '';
         const extra = JSON.stringify({ a: p.attributes, pr: p.price, q: p.quantity });
@@ -98,17 +102,25 @@
   btn.addEventListener('click', async () => {
     btn.disabled = true;
     try {
+      const { onlyWay } = await chrome.storage.sync.get({ onlyWay: true });
       say('Читаю список заказов…');
-      const nums = await orderNumbers();
-      const orders = [];
+      // завершённые — только если нужны и полученные
+      const nums = await orderNumbers(onlyWay ? ['active'] : ['active', 'archive']);
+      let orders = [];
       for (const [i, n] of nums.entries()) {
         say(`Читаю заказ ${i + 1} из ${nums.length}…`);
-        orders.push(await order(n));
+        orders.push(await order(n, onlyWay));
+      }
+      if (onlyWay) orders = orders.filter((o) => o.items.length);
+      if (!orders.length) {
+        say(onlyWay ? 'Заказов в пути нет — отправлять нечего.' : 'Заказов нет.');
+        return;
       }
       say('Отправляю на склад…');
       const res = await chrome.runtime.sendMessage({ type: 'orders', shop: 'Ozon', orders });
       if (res.error) say(res.error);
-      else say(`Готово: новых ${res.new}, обновлено ${res.updated}. Ждут разбора: ${res.inbox}.`, res.server + '/buy/inbox');
+      else say(`Готово${onlyWay ? ` (в пути: ${orders.length})` : ''}: новых ${res.new}, обновлено ${res.updated}. Ждут разбора: ${res.inbox}.`,
+        res.server + '/buy/inbox');
     } catch (e) {
       say('Не получилось: ' + e.message + '. Обновите страницу и попробуйте ещё раз; не помогло — Ozon поменял сайт.');
     } finally {
